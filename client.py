@@ -9,7 +9,7 @@ async def write_to_chat(host, port, user_hash):
     await reader.readline()
 
     while True:
-        message = input('Type smth: ')
+        message = input('Your message: ')
         send_message(writer, message)
 
 
