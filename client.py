@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import json
 from config import get_config
 
 logger_sender = logging.getLogger('sender')
@@ -9,16 +10,24 @@ logging.basicConfig(level=logging.DEBUG)
 
 async def write_to_chat(host, port, user_hash):
     reader, writer = await asyncio.open_connection(host, port)
+    access = await access_to_chat(reader, writer, user_hash)
+    if access:
+        while True:
+            message = input('Your message: ')
+            send_message(writer, message)
+
+
+async def access_to_chat(reader, writer, user_hash):
     response = await reader.readline()
     logger_sender.debug(response.decode())
     logger_client.debug(user_hash)
     send_message(writer, user_hash)
     response = await reader.readline()
     logger_sender.debug(response.decode())
-
-    while True:
-        message = input('Your message: ')
-        send_message(writer, message)
+    if not json.loads(response.decode()):
+        logger_sender.error('Неизвестный токен. Проверьте его или зарегистрируйте заново.')
+        return False
+    return True
 
 
 def send_message(writer, message):
