@@ -1,12 +1,20 @@
 import asyncio
+import logging
 from config import get_config
+
+logger_sender = logging.getLogger('sender')
+logger_client = logging.getLogger('client')
+logging.basicConfig(level=logging.DEBUG)
 
 
 async def write_to_chat(host, port, user_hash):
     reader, writer = await asyncio.open_connection(host, port)
-    await reader.readline()
+    response = await reader.readline()
+    logger_sender.debug(response.decode())
+    logger_client.debug(user_hash)
     send_message(writer, user_hash)
-    await reader.readline()
+    response = await reader.readline()
+    logger_sender.debug(response.decode())
 
     while True:
         message = input('Your message: ')
