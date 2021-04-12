@@ -1,7 +1,11 @@
 import asyncio
 import aiofiles
 from datetime import datetime
+import logging
+
 from config import get_config
+
+logging.basicConfig(level=logging.INFO)
 
 
 async def read_chat(host, port, path):
@@ -16,7 +20,10 @@ async def read_chat(host, port, path):
 
 
 async def main(config):
-    await read_chat(config.host, config.port_out, config.path)
+    if not config.host or not config.port_out:
+        logging.warning('Необходимо указать имя хоста (--host) и порт (--port_out)')
+    else:
+        await read_chat(config.host, config.port_out, config.path)
 
 
 if __name__ == '__main__':

@@ -7,9 +7,9 @@ logger = logging.getLogger('server')
 logging.basicConfig(level=logging.DEBUG)
 
 
-async def submit_message(host, port, user_hash):
+async def submit_message(host, port, user_hash, user_conf):
     reader, writer = await asyncio.open_connection(host, port)
-    authorisation = await authorise(reader, writer, user_hash)
+    authorisation = await authorise(reader, writer, user_hash, user_conf)
     logger.info('For leaving chat type: Exit!')
 
     if authorisation:
@@ -24,7 +24,7 @@ async def submit_message(host, port, user_hash):
             writer.write('\n\n'.encode())
 
 
-async def authorise(reader, writer, user_hash):
+async def authorise(reader, writer, user_hash, user_conf):
     response = await reader.readline()
     logger.debug(response.decode())
 
@@ -39,6 +39,8 @@ async def authorise(reader, writer, user_hash):
         logger.error('''Неизвестный токен. Проверьте его или
                                зарегистрируйте заново.''')
         return False
+    if user_conf:
+        save_user_config(response)
 
     return True
 
@@ -66,21 +68,29 @@ async def register(host, port):
     response = await reader.readline()
     logger.debug(response.decode())
     user_info = json.loads(response.decode())
-
-    with open('config.ini', 'a') as file:
-        file.write(f'\nuser_hash={user_info["account_hash"]}')
+    save_user_config(response)
 
     writer.close()
     await writer.wait_closed()
     return user_info['account_hash']
 
 
+def save_user_config(response):
+    user_info = json.loads(response.decode())
+
+    with open('user.conf', 'w') as file:
+        file.write(f'user_hash={user_info["account_hash"]}\n')
+        file.write(f'nickname={user_info["nickname"]}\n')
+
+
 async def main(config):
     user_hash = config.user_hash
     if not user_hash:
         user_hash = await register(config.host, config.port_in)
-    
-    await submit_message(config.host, config.port_in, user_hash)
+        config.user_conf = False
+        
+    if user_hash:
+        await submit_message(config.host, config.port_in, user_hash, config.user_conf)
 
 
 if __name__ == '__main__':
