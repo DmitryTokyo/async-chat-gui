@@ -35,5 +35,3 @@ Also you can set argument by putting the environment variables in a config file,
 `server.py` - server side script.
 `client` - client side script.
 `config.py` - start arguments configurations.
-
-## License
