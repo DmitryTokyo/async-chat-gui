@@ -1,5 +1,7 @@
 # MINECRAFT CHAT
 
+[![license](https://img.shields.io/github/license/DAVFoundation/captain-n3m0.svg?style=flat-square)](https://github.com/DmitryTokyo/minecraft-chat/blob/master/LICENSE)
+
 ## Installation
 
 For correct microservice work needs Python not less 3.8 version. I recommend to use virtual environment. All dependencies you should set from requirements.txt by command:
@@ -33,3 +35,5 @@ Also you can set argument by putting the environment variables in a config file,
 `server.py` - server side script.
 `client` - client side script.
 `config.py` - start arguments configurations.
+
+## License
