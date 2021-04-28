@@ -2,30 +2,61 @@ import asyncio
 import aiofiles
 from datetime import datetime
 import logging
+import socket
+from contextlib import contextmanager, asynccontextmanager
 
-from config import get_config
+from config import get_server_config
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__file__)
+
+
+def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
+    """Set TCP keepalive on an open socket.
+    It activates after 1 second (after_idle_sec) of idleness,
+    then sends a keepalive ping once every 3 seconds (interval_sec),
+    and closes the connection after 5 failed ping (max_fails), or 15 seconds
+    """
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, after_idle_sec)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval_sec)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, max_fails)
+
+
+@asynccontextmanager
+async def get_reader(sock):
+    try:
+        reader, writer = await asyncio.open_connection(sock=sock)
+        yield reader
+    finally:
+        writer.close()
 
 
 async def read_chat(host, port, path):
     while True:
-        reader, writer = await asyncio.open_connection(host, port)
-        data = await reader.readline()
-        message_time = datetime.now().strftime('[%d.%m.%y %H:%M]')
-        print(f'{message_time} {data.decode()}', end='')
+        try:
+            sock = socket.create_connection((host, port))
+            set_keepalive_linux(sock, 1, 1, 1)
+            async with get_reader(sock) as reader:
+                while True:
+                    data = await reader.readline()
+                    message_time = datetime.now().strftime('[%d.%m.%y %H:%M]')
+                    print(f'{message_time} {data.decode()}', end='')
+                    async with aiofiles.open(path, 'a') as file:
+                        await file.write(f'{message_time} {data.decode()}')
 
-        async with aiofiles.open(path, 'a') as file:
-            await file.write(f'{message_time} {data.decode()}')
+        except TimeoutError:
+            logging.error('Timeout TCP')
+        except socket.gaierror:
+            logging.error('gaierror')
 
 
-async def main(config):
-    if not config.host or not config.port_out:
-        logging.warning('Необходимо указать имя хоста (--host) и порт (--port_out)')
-    else:
+async def main():
+    logger.setLevel(logging.INFO)
+    config = get_server_config()
+
+    if config:
         await read_chat(config.host, config.port_out, config.path)
 
 
 if __name__ == '__main__':
-    config = get_config()
-    asyncio.run(main(config))
+    asyncio.run(main())
