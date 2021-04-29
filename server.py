@@ -3,7 +3,7 @@ import aiofiles
 from datetime import datetime
 import logging
 import socket
-from contextlib import contextmanager, asynccontextmanager
+from contextlib import asynccontextmanager
 
 from config import get_server_config
 
@@ -11,11 +11,6 @@ logger = logging.getLogger(__file__)
 
 
 def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
-    """Set TCP keepalive on an open socket.
-    It activates after 1 second (after_idle_sec) of idleness,
-    then sends a keepalive ping once every 3 seconds (interval_sec),
-    and closes the connection after 5 failed ping (max_fails), or 15 seconds
-    """
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, after_idle_sec)
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval_sec)
@@ -45,9 +40,9 @@ async def read_chat(host, port, path):
                         await file.write(f'{message_time} {data.decode()}')
 
         except TimeoutError:
-            logging.error('Timeout TCP')
+            logging.exception()
         except socket.gaierror:
-            logging.error('gaierror')
+            logging.exception()
 
 
 async def main():
