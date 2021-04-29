@@ -47,6 +47,12 @@ async def read_chat(host, port, path):
 
 async def main():
     logger.setLevel(logging.INFO)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
     config = get_server_config()
 
     if config:
