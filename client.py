@@ -1,30 +1,59 @@
 import asyncio
 import logging
 import json
-from config import get_config
+import socket
+from contextlib import asynccontextmanager
 
-logger = logging.getLogger('server')
-logging.basicConfig(level=logging.DEBUG)
+from config import get_client_config, update_user_config
+from custom_error import HashError
 
-
-async def submit_message(host, port, user_hash, user_conf):
-    reader, writer = await asyncio.open_connection(host, port)
-    authorisation = await authorise(reader, writer, user_hash, user_conf)
-    logger.info('For leaving chat type: Exit!')
-
-    if authorisation:
-        while True:
-            message = input('Your message: ')
-            if message == 'Exit!':
-                writer.close()
-                await writer.wait_closed()
-                break
-
-            writer.write(message.encode())
-            writer.write('\n\n'.encode())
+logger = logging.getLogger('server ')
 
 
-async def authorise(reader, writer, user_hash, user_conf):
+def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=5):
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, after_idle_sec)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval_sec)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, max_fails)
+
+
+@asynccontextmanager
+async def get_writer(sock, user_hash, upd_user_file):
+    try:
+        reader, writer = await asyncio.open_connection(sock=sock)
+        await authorise(reader, writer, user_hash, upd_user_file)
+        yield writer
+    finally:
+        writer.close()
+        await writer.wait_closed()
+
+
+async def submit_message(host, port, user_hash, upd_user_file):
+    while True:
+        try:
+            sock = socket.create_connection((host, port))
+            set_keepalive_linux(sock, 1, 1, 1)
+            async with get_writer(sock, user_hash, upd_user_file) as writer:
+                while True:
+                    try:
+                        message = input('Your message: ')
+                        if message == 'Exit!':
+                            return
+                        writer.write(message.encode())
+                        writer.write('\n\n'.encode())
+                        await writer.drain()
+                    except socket.error:
+                        break
+        except TimeoutError as e:
+            logging.exception(e)
+        except socket.gaierror as e:
+            logging.exception(e)
+        except HashError:
+            print('Please check your hash or get a new one')
+            break
+
+
+async def authorise(reader, writer, user_hash, upd_user_file):
     response = await reader.readline()
     logger.debug(response.decode())
 
@@ -35,21 +64,18 @@ async def authorise(reader, writer, user_hash, user_conf):
     logger.debug(response.decode())
 
     if not json.loads(response.decode()):
-        logger.error(f'User hash: {user_hash}')
-        logger.error('''Неизвестный токен. Проверьте его или
-                               зарегистрируйте заново.''')
-        return False
-    if user_conf:
-        save_user_config(response)
+        print(f'User hash: {user_hash} is unknown. Please check or get a new one.')
+        raise HashError
 
-    return True
+    if upd_user_file:
+        update_user_config(response)
 
 
 async def register(host, port):
-    print('''Для доступа к чату нужен user hash. Если у вас он есть,
-    укажите его при запуске скрипта. Если нет, получите новый user hash.''')
+    print('''To access the chat you need the user hash. Please pass it as 
+    argument --user_hash or get a new one ''')
 
-    response = input('Вам нужен новый user_hash (y/n)? ')
+    response = input('Do you need a new user hash (y/n)? ')
     if response == 'n':
         return None
 
@@ -68,31 +94,31 @@ async def register(host, port):
     response = await reader.readline()
     logger.debug(response.decode())
     user_info = json.loads(response.decode())
-    save_user_config(response)
+    update_user_config(response)
 
     writer.close()
     await writer.wait_closed()
     return user_info['account_hash']
 
 
-def save_user_config(response):
-    user_info = json.loads(response.decode())
+async def main():
+    logger.setLevel(logging.INFO)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
 
-    with open('user.conf', 'w') as file:
-        file.write(f'user_hash={user_info["account_hash"]}\n')
-        file.write(f'nickname={user_info["nickname"]}\n')
-
-
-async def main(config):
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    
+    config = get_client_config()
     user_hash = config.user_hash
     if not user_hash:
         user_hash = await register(config.host, config.port_in)
         config.user_conf = False
         
     if user_hash:
-        await submit_message(config.host, config.port_in, user_hash, config.user_conf)
+        await submit_message(config.host, config.port_in, user_hash, config.upd_user_file)
 
 
 if __name__ == '__main__':
-    config = get_config()
-    asyncio.run(main(config))
+    asyncio.run(main())
