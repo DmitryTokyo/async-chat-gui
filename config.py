@@ -4,10 +4,8 @@ import json
 
 def get_server_config():
     parent_parser = set_parent_arguments()
-    parser = configargparse.ArgParser(parents=[parent_parser])
+    parser = configargparse.ArgParser(default_config_files=['server.conf'], parents=[parent_parser])
 
-    parser.add_argument('--host', type=str, help='host name', 
-                        default='minechat.dvmn.org')
     parser.add_argument('--port_out', type=int, help='chat port out (server.py)', 
                         default=5000)
     parser.add_argument('--path', type=str, help='chat file path', 
@@ -28,7 +26,7 @@ def get_server_config():
 
 def get_client_config():
     parent_parser = set_parent_arguments()
-    parser = configargparse.ArgParser(parents=[parent_parser])
+    parser = configargparse.ArgParser(default_config_files=['user.conf'], parents=[parent_parser])
     parser.add_argument('--user_hash', type=str, help='user hash')
     parser.add_argument('--nickname', type=str, help='nickname')
     parser.add_argument('--port_in', type=int, help='chat port in (client.py)', 
@@ -36,12 +34,12 @@ def get_client_config():
     parser.add_argument('--upd_user_file', action='store_true', 
                         help='save user information to config file')
     config, unknown = parser.parse_known_args()
-
+    print(config)
     return config
 
 
 def set_parent_arguments():
-    parser = configargparse.ArgParser(default_config_files=['*.conf'], add_help=False)
+    parser = configargparse.ArgParser(add_help=False)
     parser.add_argument('--host', type=str, help='host name', 
                         default='minechat.dvmn.org')
     return parser
