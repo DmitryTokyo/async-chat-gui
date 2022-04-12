@@ -34,7 +34,6 @@ def get_client_config():
     parser.add_argument('--upd_user_file', action='store_true', 
                         help='save user information to config file')
     config, unknown = parser.parse_known_args()
-    print(config)
     return config
 
 
