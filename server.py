@@ -24,6 +24,7 @@ async def get_reader(sock):
         yield reader
     finally:
         writer.close()
+        await writer.wait_closed()
 
 
 async def read_chat(host, port, path):
