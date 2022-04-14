@@ -23,8 +23,6 @@ async def read_chat(host, port, path):
                     async with aiofiles.open(path, 'a') as file:
                         await file.write(f'{message_time} {data.decode()}')
 
-        except TimeoutError as e:
-            logging.exception(e)
         except socket.gaierror as e:
             logging.exception(e)
 

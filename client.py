@@ -26,8 +26,7 @@ async def submit_message(host, port, user_hash, upd_user_file):
                         await writer.drain()
                     except socket.error:
                         break
-        except TimeoutError as e:
-            logging.exception(e)
+
         except socket.gaierror as e:
             logging.exception(e)
         except HashError:
