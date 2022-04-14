@@ -13,7 +13,7 @@ def get_server_config():
     config, unknown = parser.parse_known_args()
 
     if not config.host or not config.port_out:
-        parser.error('Необходимо указать имя хоста (--host) и порт (--port_out)')
+        parser.error('You should to text host name (--host) and port (--port_out)')
 
     if config.upd_server_file:
         update_server_config_file(config)
