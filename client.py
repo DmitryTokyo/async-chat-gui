@@ -1,13 +1,13 @@
 import asyncio
 import logging
-import json
 import socket
 
 from chat_connection import set_keepalive_linux, ChatConnection
-from config import get_client_config, update_user_config
+from config import get_client_config
 from custom_error import HashError
+from registration import register
 
-logger = logging.getLogger('server ')
+logger = logging.getLogger('server')
 
 
 async def submit_message(host, port, user_hash, upd_user_file):
@@ -32,36 +32,6 @@ async def submit_message(host, port, user_hash, upd_user_file):
         except HashError:
             print('Please check your hash or get a new one')
             break
-
-
-async def register(host, port):
-    print('''To access the chat you need the user hash. Please pass it as 
-    argument --user_hash or get a new one ''')
-
-    response = input('Do you need a new user hash (y/n)? ')
-    if response == 'n':
-        return None
-
-    reader, writer = await asyncio.open_connection(host, port)
-
-    response = await reader.readline()
-    logger.debug(response.decode())
-    writer.write('\n'.encode())
-    response = await reader.readline()
-    logger.debug(response.decode())
-
-    nicname = input()
-    writer.write(nicname.encode())
-    writer.write('\n'.encode())
-
-    response = await reader.readline()
-    logger.debug(response.decode())
-    user_info = json.loads(response.decode())
-    update_user_config(response)
-
-    writer.close()
-    await writer.wait_closed()
-    return user_info['account_hash']
 
 
 async def main():
