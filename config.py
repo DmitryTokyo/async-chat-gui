@@ -6,18 +6,14 @@ def get_server_config():
     parent_parser = set_parent_arguments()
     parser = configargparse.ArgParser(default_config_files=['server.conf'], parents=[parent_parser])
 
-    parser.add_argument('--port_out', type=int, help='chat port out (server.py)', 
-                        default=5000)
-    parser.add_argument('--path', type=str, help='chat file path', 
-                        default='./chat.txt')
-    parser.add_argument('--upd_server_file', action='store_true',
-                        help='update server config file information')
+    parser.add_argument('--port_out', type=int, help='chat port out (server.py)', default=5000)
+    parser.add_argument('--path', type=str, help='chat file path', default='./chat.txt')
+    parser.add_argument('--upd_server_file', action='store_true', help='update server config file information')
     
     config, unknown = parser.parse_known_args()
 
     if not config.host or not config.port_out:
-        print('Необходимо указать имя хоста (--host) и порт (--port_out)')
-        return None
+        parser.error('Необходимо указать имя хоста (--host) и порт (--port_out)')
 
     if config.upd_server_file:
         update_server_config_file(config)
