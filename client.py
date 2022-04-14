@@ -18,7 +18,7 @@ async def submit_message(host, port, user_hash, upd_user_file):
             async with ChatConnection(sock, user_hash, upd_user_file) as (reader, writer):
                 while True:
                     try:
-                        message = input('Your message: ')
+                        message = input('Your message (Type Exit! for chat exit): ')
                         if message == 'Exit!':
                             return
                         writer.write(message.encode())
