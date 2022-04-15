@@ -7,7 +7,7 @@ from custom_error import HashError
 logger = logging.getLogger(__file__)
 
 
-async def authorise(reader, writer, user_hash, upd_user_file):
+async def authorize(reader, writer, user_hash, upd_user_file):
     response = await reader.readline()
     logger.debug(response.decode())
 
