@@ -14,12 +14,11 @@ async def read_chat(host, port, path):
     while True:
         try:
             async with ChatConnection(host, port) as (reader, writer):
-                while True:
-                    data = await reader.readline()
-                    message_time = datetime.now().strftime('[%d.%m.%y %H:%M]')
-                    print(f'{message_time} {data.decode()}', end='')
-                    async with aiofiles.open(path, 'a') as file:
-                        await file.write(f'{message_time} {data.decode()}')
+                data = await reader.readline()
+                message_time = datetime.now().strftime('[%d.%m.%y %H:%M]')
+                print(f'{message_time} {data.decode()}', end='')
+                async with aiofiles.open(path, 'a') as file:
+                    await file.write(f'{message_time} {data.decode()}')
 
         except socket.gaierror as e:
             logging.exception(e)

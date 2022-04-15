@@ -11,25 +11,20 @@ logger = logging.getLogger('server')
 
 
 async def submit_message(host, port, user_hash, upd_user_file):
-    while True:
-        try:
-            async with ChatConnection(host, port, user_hash, upd_user_file) as (reader, writer):
-                while True:
-                    try:
-                        message = input('Your message (Type Exit! for chat exit): ')
-                        if message == 'Exit!':
-                            return
-                        writer.write(message.encode())
-                        writer.write('\n\n'.encode())
-                        await writer.drain()
-                    except socket.error:
-                        break
+    try:
+        async with ChatConnection(host, port, user_hash, upd_user_file) as (reader, writer):
+            while True:
+                message = input('Your message (Type Exit! for chat exit): ')
+                if message == 'Exit!':
+                    return
+                writer.write(message.encode())
+                writer.write('\n\n'.encode())
+                await writer.drain()
 
-        except socket.gaierror as e:
-            logging.exception(e)
-        except HashError:
-            print('Please check your hash or get a new one')
-            break
+    except socket.gaierror as e:
+        logging.exception(e)
+    except HashError:
+        print('Please check your hash or get a new one')
 
 
 async def main():
