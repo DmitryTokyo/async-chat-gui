@@ -24,7 +24,7 @@ async def submit_message(host, port, user_hash, upd_user_file):
     except socket.gaierror as e:
         logging.exception(e)
     except HashError:
-        print('Please check your hash or get a new one')
+        print(f'User hash: {user_hash} is unknown. Please check or get a new one.')
 
 
 async def main():

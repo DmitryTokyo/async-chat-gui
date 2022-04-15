@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 
-from config import update_user_config
+from config import save_user_info
 
 logger = logging.getLogger('server')
 
@@ -30,7 +30,7 @@ async def register(host, port):
     response = await reader.readline()
     logger.debug(response.decode())
     user_info = json.loads(response.decode())
-    update_user_config(response)
+    save_user_info(response)
 
     writer.close()
     await writer.wait_closed()

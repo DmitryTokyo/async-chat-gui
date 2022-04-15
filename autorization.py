@@ -1,7 +1,7 @@
 import json
 import logging
 
-from config import update_user_config
+from config import save_user_info
 from custom_error import HashError
 
 logger = logging.getLogger(__file__)
@@ -18,8 +18,7 @@ async def authorize(reader, writer, user_hash, upd_user_file):
     logger.debug(response.decode())
 
     if not json.loads(response.decode()):
-        print(f'User hash: {user_hash} is unknown. Please check or get a new one.')
         raise HashError
 
     if upd_user_file:
-        update_user_config(response)
+        save_user_info(response)

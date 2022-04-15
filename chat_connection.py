@@ -1,7 +1,7 @@
 import asyncio
 import socket
 
-from autorization import authorise
+from autorization import authorize
 
 
 class ChatConnection:
@@ -15,7 +15,7 @@ class ChatConnection:
     async def __aenter__(self):
         self.reader, self.writer = await asyncio.open_connection(sock=self.sock)
         if self.user_hash and self.user_data_file:
-            await authorise(self.reader, self.writer, self.user_hash, self.user_data_file)
+            await authorize(self.reader, self.writer, self.user_hash, self.user_data_file)
         return self.reader, self.writer
 
     async def __aexit__(self, *args):
