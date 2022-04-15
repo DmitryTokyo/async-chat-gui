@@ -22,22 +22,21 @@ python client.py arguments
 
 The service support the next arguments:
 
+Server
+
+```shell
+--host        - an IP address or address of host.
+--port_out    - port for reading messages.
+--path        - path of file with chat records.
+--save_config - save server configuration to file.
 ```
+
+```shell
 --host      - an IP address or address of host.
---port_out  - port for reading messages.
---server    - save your server configuration to config file.
 --user_hash - user account hash.
---port_in   - port for sending messages.
 --nickname  - your chat nickname.
---user_conf - save user configuration to file.
+--port_in   - port for sending messages.
+--save_info - save user configuration to file.
 ```
 
-Also you can set argument by putting the environment variables in a config file, for example `config.ini`. The config file syntax - `key=value`.
-
-## Files overview
-
-`server.py` - broadcasts all messages from other connected clients.
-
-`client` - checks user input and in case if it is message then send it to server.
-
-`config.py` - determines start arguments configuration.
+Also, you can set argument by putting the environment variables in a config file, for example `config.ini`. The config file syntax - `key=value`.
