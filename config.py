@@ -8,15 +8,15 @@ def get_server_config():
 
     parser.add_argument('--port_out', type=int, help='chat port out (server.py)', default=5000)
     parser.add_argument('--path', type=str, help='chat file path', default='./chat.txt')
-    parser.add_argument('--upd_server_file', action='store_true', help='update server config file information')
+    parser.add_argument('--save_config', action='store_true', help='save server configuration to file')
     
     config, unknown = parser.parse_known_args()
 
     if not config.host or not config.port_out:
         parser.error('You should to text host name (--host) and port (--port_out)')
 
-    if config.upd_server_file:
-        update_server_config_file(config)
+    if config.save_config:
+        save_server_configuration(config)
     return config
 
 
@@ -27,8 +27,8 @@ def get_client_config():
     parser.add_argument('--nickname', type=str, help='nickname')
     parser.add_argument('--port_in', type=int, help='chat port in (client.py)', 
                         default=5050)
-    parser.add_argument('--upd_user_file', action='store_true', 
-                        help='save user information to config file')
+    parser.add_argument('--save_info', action='store_true',
+                        help='save client information to file')
     config, unknown = parser.parse_known_args()
     return config
 
@@ -40,15 +40,14 @@ def get_base_parser():
     return parser
 
 
-def update_server_config_file(config):
+def save_server_configuration(config):
     with open('server.conf', 'w') as file:
         file.write(f'host={config.host}\n') 
         file.write(f'port_out={config.port_out}\n')
-        file.write(f'port_in={config.port_in}\n')
         file.write(f'path={config.path}\n')
         
 
-def update_user_config(response):
+def save_user_info(response):
     user_info = json.loads(response.decode())
 
     with open('user.conf', 'w') as file:
