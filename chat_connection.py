@@ -6,10 +6,11 @@ from autorization import authorise
 
 class ChatConnection:
 
-    def __init__(self, sock, user_hash = None, used_data_file = None):
-        self.sock = sock
+    def __init__(self, host, port, user_hash=None, used_data_file=None):
+        self.sock = socket.create_connection((host, port))
         self.user_hash = user_hash
         self.user_data_file = used_data_file
+        set_keepalive_linux(self.sock, 1, 1, 1)
 
     async def __aenter__(self):
         self.reader, self.writer = await asyncio.open_connection(sock=self.sock)

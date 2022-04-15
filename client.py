@@ -13,9 +13,7 @@ logger = logging.getLogger('server')
 async def submit_message(host, port, user_hash, upd_user_file):
     while True:
         try:
-            sock = socket.create_connection((host, port))
-            set_keepalive_linux(sock, 1, 1, 1)
-            async with ChatConnection(sock, user_hash, upd_user_file) as (reader, writer):
+            async with ChatConnection(host, port, user_hash, upd_user_file) as (reader, writer):
                 while True:
                     try:
                         message = input('Your message (Type Exit! for chat exit): ')

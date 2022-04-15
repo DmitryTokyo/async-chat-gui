@@ -13,9 +13,7 @@ logger = logging.getLogger(__file__)
 async def read_chat(host, port, path):
     while True:
         try:
-            sock = socket.create_connection((host, port))
-            set_keepalive_linux(sock, 1, 1, 1)
-            async with ChatConnection(sock) as (reader, writer):
+            async with ChatConnection(host, port) as (reader, writer):
                 while True:
                     data = await reader.readline()
                     message_time = datetime.now().strftime('[%d.%m.%y %H:%M]')
