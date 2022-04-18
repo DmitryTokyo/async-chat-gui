@@ -2,7 +2,7 @@ import asyncio
 import logging
 import socket
 
-from chat_connection import set_keepalive_linux, ChatConnection
+from chat_connection import ChatConnection
 from config import get_client_config
 from custom_error import HashError
 from registration import register
