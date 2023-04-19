@@ -43,7 +43,7 @@ async def main():
         config.user_conf = False
         
     if user_hash:
-        await submit_message(config.host, config.port_in, user_hash, config.upd_user_file)
+        await submit_message(config.host, config.port_in, user_hash, config.save_info)
 
 
 if __name__ == '__main__':
