@@ -9,4 +9,4 @@ class HashError(Exception):
         if self.message:
             return f'Wrong hash error, {self.message}'
         else:
-            return 'Wrong hash error has beed raised'
+            return 'Wrong hash error has been raised'
