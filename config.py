@@ -6,7 +6,7 @@ def get_server_config():
     base_parser = get_base_parser()
     parser = configargparse.ArgParser(default_config_files=['server.conf'], parents=[base_parser])
 
-    parser.add_argument('--port_out', type=int, help='chat port out (server.py)', default=5000)
+    parser.add_argument('--port_out', type=int, help='chat port out in server module', default=5000)
     parser.add_argument('--path', type=str, help='chat file path', default='./chat.txt')
     parser.add_argument('--save_config', action='store_true', help='save server configuration to file')
     
