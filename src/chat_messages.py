@@ -32,7 +32,7 @@ async def save_messages(message_time: str, message: bytes, server_config: Namesp
         await file.write(f'{message_time} {message.decode()}')
 
 
-async def load_history_to(queue: Queue, server_config: Namespace) -> None:
+async def load_messages_history_to(queue: Queue, server_config: Namespace) -> None:
     if not server_config.path:
         return
 
