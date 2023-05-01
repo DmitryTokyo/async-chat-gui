@@ -3,7 +3,7 @@ from argparse import Namespace
 
 from src.service import gui
 from src.config import get_chat_config
-from src.chat_messages import read_msgs_from, load_messages_history_to
+from src.chat_messages import read_msgs_from, load_messages_history_to, send_msgs
 
 
 async def run_chat(chat_config: Namespace):
@@ -14,6 +14,7 @@ async def run_chat(chat_config: Namespace):
     await asyncio.gather(
         gui.draw(messages_queue, sending_queue, status_updates_queue),
         read_msgs_from(messages_queue, chat_config),
+        send_msgs(sending_queue, chat_config)
     )
 
 

@@ -34,7 +34,7 @@ async def save_messages(message_time: str, message: bytes, chat_config: Namespac
         await file.write(f'{message_time} {message.decode()}')
 
 
-async def load_messages_history_to(queue: Queue, chat_config: Namespace) -> None:
+async def load_messages_history_to(messages_queue: Queue, chat_config: Namespace) -> None:
     if not chat_config.history_path:
         return
 
@@ -48,4 +48,22 @@ async def load_messages_history_to(queue: Queue, chat_config: Namespace) -> None
 
     with open(chat_history_path, 'r') as chat_history:
         for message in chat_history:
-            queue.put_nowait(message)
+            messages_queue.put_nowait(message)
+
+
+async def send_msgs(sending_queue: Queue, chat_config: Namespace):
+    try:
+        async with ChatConnection(
+            chat_config.host, chat_config.port_in, chat_config.user_hash, chat_config.save_info
+        ) as (reader, writer):
+            while True:
+                msg = await sending_queue.get()
+                if msg:
+                    writer.write(msg.encode())
+                    writer.write('\n\n'.encode())
+                    await writer.drain()
+
+    except socket.gaierror as e:
+        logger.exception(e)
+    except HashError:
+        print(f'User hash: {chat_config.user_hash} is unknown. Please check or get a new one.')
