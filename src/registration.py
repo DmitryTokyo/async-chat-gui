@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 
-from config import save_user_info
+from src.config import save_user_info
 
 logger = logging.getLogger('server')
 

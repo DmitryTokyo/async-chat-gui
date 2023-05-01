@@ -1,11 +1,9 @@
 import asyncio
 from argparse import Namespace
 
-import gui
-from config import get_server_config
-from server import read_msgs_from, load_history_to
-
-from loguru import logger
+from src.service import gui
+from src.config import get_server_config
+from src.chat_messages import read_msgs_from, load_history_to
 
 
 async def run_chat(server_config: Namespace):

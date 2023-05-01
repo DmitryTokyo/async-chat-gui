@@ -1,7 +1,7 @@
 import asyncio
 import socket
 
-from autorization import authorize
+from src.service.autorization import authorize
 
 
 class ChatConnection:

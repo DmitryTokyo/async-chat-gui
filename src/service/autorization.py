@@ -1,8 +1,8 @@
 import json
 import logging
 
-from config import save_user_info
-from custom_error import HashError
+from src.config import save_user_info
+from src.utils.custom_error import HashError
 
 logger = logging.getLogger(__file__)
 

@@ -3,8 +3,8 @@ import logging
 import socket
 
 from chat_connection import ChatConnection
-from config import get_client_config
-from custom_error import HashError
+from src.config import get_client_config
+from src.utils.custom_error import HashError
 from registration import register
 
 logger = logging.getLogger('server')
