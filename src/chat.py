@@ -2,7 +2,7 @@ import asyncio
 from argparse import Namespace
 
 from src.service import gui
-from src.config import get_chat_config
+from src.config.chat_config import get_chat_config
 from src.chat_messages import read_msgs_from, load_messages_history_to, send_msgs
 
 

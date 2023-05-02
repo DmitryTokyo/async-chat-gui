@@ -1,7 +1,7 @@
 import json
 import logging
 
-from src.config import save_user_info
+from src.config.chat_config import save_user_info
 from src.utils.custom_error import HashError
 
 logger = logging.getLogger(__file__)
