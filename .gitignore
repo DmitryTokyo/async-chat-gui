@@ -3,3 +3,4 @@
 *.txt
 .envrc
 .env
+*.conf
