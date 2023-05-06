@@ -4,18 +4,31 @@ from argparse import Namespace
 from src.service import gui
 from src.config.chat_config import get_chat_config
 from src.chat_messages import read_msgs_from, load_messages_history_to, send_msgs
+from src.utils.custom_error import InvalidToken
 
 
 async def run_chat(chat_config: Namespace):
     messages_queue = asyncio.Queue()
     sending_queue = asyncio.Queue()
     status_updates_queue = asyncio.Queue()
+    exception_queue = asyncio.Queue()
     await load_messages_history_to(messages_queue, chat_config),
-    await asyncio.gather(
-        gui.draw(messages_queue, sending_queue, status_updates_queue),
-        read_msgs_from(messages_queue, chat_config),
-        send_msgs(sending_queue, chat_config)
-    )
+    try:
+        await asyncio.gather(
+            gui.draw(messages_queue, sending_queue, status_updates_queue, exception_queue),
+            read_msgs_from(messages_queue, chat_config),
+            send_msgs(sending_queue, exception_queue, chat_config)
+        )
+    except InvalidToken:
+        cancel_all_tasks()
+
+
+def cancel_all_tasks():
+    tasks = asyncio.all_tasks()
+    current = asyncio.current_task()
+    tasks.remove(current)
+    for task in tasks:
+        task.cancel()
 
 
 async def main():

@@ -2,6 +2,9 @@ import tkinter as tk
 import asyncio
 from tkinter.scrolledtext import ScrolledText
 from enum import Enum
+from tkinter import messagebox
+
+from src.utils.custom_error import InvalidToken
 
 
 class TkAppClosed(Exception):
@@ -100,7 +103,14 @@ def create_status_panel(root_frame):
     return (nickname_label, status_read_label, status_write_label)
 
 
-async def draw(messages_queue, sending_queue, status_updates_queue):
+async def show_exception_window(exception_queue):
+    error_msg = await exception_queue.get()
+    if error_msg:
+        messagebox.showerror('Error', error_msg)
+        raise InvalidToken
+
+
+async def draw(messages_queue, sending_queue, status_updates_queue, exception_queue):
     root = tk.Tk()
 
     root.title('Чат Майнкрафтера')
@@ -129,5 +139,6 @@ async def draw(messages_queue, sending_queue, status_updates_queue):
     await asyncio.gather(
         update_tk(root_frame),
         update_conversation_history(conversation_panel, messages_queue),
-        update_status_panel(status_labels, status_updates_queue)
+        update_status_panel(status_labels, status_updates_queue),
+        show_exception_window(exception_queue)
     )

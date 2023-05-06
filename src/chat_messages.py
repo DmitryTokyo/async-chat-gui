@@ -9,7 +9,7 @@ from chat_connection import ChatConnection
 
 from loguru import logger
 
-from src.utils.custom_error import HashError
+from src.utils.custom_error import InvalidToken
 
 
 async def read_msgs_from(queue: Queue, chat_config: Namespace) -> None:
@@ -51,7 +51,7 @@ async def load_messages_history_to(messages_queue: Queue, chat_config: Namespace
             messages_queue.put_nowait(message)
 
 
-async def send_msgs(sending_queue: Queue, chat_config: Namespace):
+async def send_msgs(sending_queue: Queue, exception_queue: Queue, chat_config: Namespace):
     try:
         async with ChatConnection(
             chat_config.host, chat_config.port_in, chat_config.user_hash, chat_config.save_info
@@ -65,5 +65,6 @@ async def send_msgs(sending_queue: Queue, chat_config: Namespace):
 
     except socket.gaierror as e:
         logger.exception(e)
-    except HashError:
+    except InvalidToken:
         print(f'User hash: {chat_config.user_hash} is unknown. Please check or get a new one.')
+        exception_queue.put_nowait('Check your token. Server has not recognize it')
