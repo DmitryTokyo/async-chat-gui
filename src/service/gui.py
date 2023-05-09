@@ -1,37 +1,10 @@
 import tkinter as tk
 import asyncio
 from tkinter.scrolledtext import ScrolledText
-from enum import Enum
 from tkinter import messagebox
 
-from src.utils.custom_error import InvalidToken
-
-
-class TkAppClosed(Exception):
-    pass
-
-
-class ReadConnectionStateChanged(Enum):
-    INITIATED = 'connecting...'
-    ESTABLISHED = 'connection successful'
-    CLOSED = 'connection terminated'
-
-    def __str__(self):
-        return str(self.value)
-
-
-class SendingConnectionStateChanged(Enum):
-    INITIATED = 'connecting...'
-    ESTABLISHED = 'connection successful'
-    CLOSED = 'connection terminated'
-
-    def __str__(self):
-        return str(self.value)
-
-
-class NicknameReceived:
-    def __init__(self, nickname):
-        self.nickname = nickname
+from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged, NicknameReceived
+from src.utils.custom_error import InvalidToken, TkAppClosed
 
 
 def process_new_message(input_field, sending_queue):
