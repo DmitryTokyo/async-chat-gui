@@ -10,3 +10,7 @@ class InvalidToken(Exception):
             return f'Wrong hash error, {self.message}'
         else:
             return 'Wrong hash error has been raised'
+
+
+class TkAppClosed(Exception):
+    pass
