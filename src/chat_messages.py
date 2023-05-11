@@ -1,3 +1,4 @@
+import asyncio
 from argparse import Namespace
 from asyncio import Queue
 import aiofiles
@@ -9,24 +10,39 @@ from chat_connection import ChatConnection
 
 from loguru import logger
 
+from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged
 from src.utils.custom_error import InvalidToken
+from src.config import settings
 
 
-async def read_msgs_from(queue: Queue, chat_config: Namespace) -> None:
+async def read_msgs_from(messages_queue: Queue, status_updates_queue: Queue, chat_config: Namespace) -> None:
+    retry_count = 0
     while True:
         try:
             async with ChatConnection(chat_config.host, chat_config.port_out) as (reader, writer):
                 message = await reader.readline()
                 message_time = datetime.now().strftime('[%d.%m.%y %H:%M]')
-                queue.put_nowait(f'{message_time} {message.decode()}')
+                messages_queue.put_nowait(f'{message_time} {message.decode()}')
                 await save_messages(
                     message_time=message_time,
                     message=message,
                     chat_config=chat_config,
                 )
-
-        except socket.gaierror as e:
-            logger.exception(e)
+                status_updates_queue.put_nowait(ReadConnectionStateChanged.ESTABLISHED)
+        except (socket.gaierror, TimeoutError) as e:
+            if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
+                logger.bind(
+                    action='reading',
+                    error=str(e),
+                ).error('Connection lost. Exceeded maximum connection retries.')
+                raise socket.gaierror
+            retry_count += 1
+            status_updates_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
+            logger.bind(
+                action='reading',
+                error=str(e)
+            ).warning(f'Connection lost. Retrying ({retry_count}/{settings.MAX_CONNECTION_ATTEMPT_RETRY})....')
+            await asyncio.sleep(settings.CONNECTION_RETRY_TIMEOUT)
 
 
 async def save_messages(message_time: str, message: bytes, chat_config: Namespace) -> None:
@@ -51,7 +67,13 @@ async def load_messages_history_to(messages_queue: Queue, chat_config: Namespace
             messages_queue.put_nowait(message)
 
 
-async def send_msgs(sending_queue: Queue, exception_queue: Queue, chat_config: Namespace):
+async def send_msgs(
+    sending_queue: Queue,
+    exception_queue: Queue,
+    status_updates_queue: Queue,
+    chat_config: Namespace,
+) -> None:
+    retry_count = 0
     try:
         async with ChatConnection(
             chat_config.host, chat_config.port_in, chat_config.user_hash, chat_config.save_info
@@ -63,8 +85,20 @@ async def send_msgs(sending_queue: Queue, exception_queue: Queue, chat_config: N
                     writer.write('\n\n'.encode())
                     await writer.drain()
 
-    except socket.gaierror as e:
-        logger.exception(e)
+    except (socket.gaierror, TimeoutError) as e:
+        if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
+            logger.bind(
+                action='sending',
+                error=str(e)
+            ).error('Connection lost. Exceeded maximum connection retries.')
+            raise socket.gaierror
+        retry_count += 1
+        status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
+        logger.bind(
+            action='sending',
+            error=str(e),
+        ).warning(f'Connection lost. Retrying ({retry_count}/{settings.MAX_CONNECTION_ATTEMPT_RETRY})....')
+        await asyncio.sleep(settings.CONNECTION_RETRY_TIMEOUT)
     except InvalidToken:
         print(f'User hash: {chat_config.user_hash} is unknown. Please check or get a new one.')
         exception_queue.put_nowait('Check your token. Server has not recognize it')

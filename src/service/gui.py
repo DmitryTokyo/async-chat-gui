@@ -48,10 +48,10 @@ async def update_status_panel(status_labels, status_updates_queue):
     while True:
         msg = await status_updates_queue.get()
         if isinstance(msg, ReadConnectionStateChanged):
-            read_label['text'] = f'Reading: {msg}'
+            read_label['text'] = f'Reading: {msg.value}'
 
         if isinstance(msg, SendingConnectionStateChanged):
-            write_label['text'] = f'Sending: {msg}'
+            write_label['text'] = f'Sending: {msg.value}'
 
         if isinstance(msg, NicknameReceived):
             nickname_label['text'] = f'Username: {msg.nickname}'

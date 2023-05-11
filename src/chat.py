@@ -16,8 +16,8 @@ async def run_chat(chat_config: Namespace):
     try:
         await asyncio.gather(
             gui.draw(messages_queue, sending_queue, status_updates_queue, exception_queue),
-            read_msgs_from(messages_queue, chat_config),
-            send_msgs(sending_queue, exception_queue, chat_config)
+            read_msgs_from(messages_queue, status_updates_queue, chat_config),
+            send_msgs(sending_queue, exception_queue, status_updates_queue, chat_config)
         )
     except InvalidToken:
         cancel_all_tasks()
