@@ -10,7 +10,7 @@ from chat_connection import ChatConnection
 
 from loguru import logger
 
-from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged
+from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged, NicknameReceived
 from src.utils.custom_error import InvalidToken
 from src.config import settings
 
@@ -78,6 +78,8 @@ async def send_msgs(
         async with ChatConnection(
             chat_config.host, chat_config.port_in, chat_config.user_hash, chat_config.save_info
         ) as (reader, writer):
+            status_updates_queue.put_nowait(SendingConnectionStateChanged.ESTABLISHED)
+            status_updates_queue.put_nowait(NicknameReceived(chat_config.nickname))
             while True:
                 msg = await sending_queue.get()
                 if msg:
