@@ -32,6 +32,7 @@ async def read_msgs_from(messages_queue: Queue, status_updates_queue: Queue, cha
         except (socket.gaierror, TimeoutError) as e:
             if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
                 logger.bind(
+                    module='server',
                     action='reading',
                     error=str(e),
                 ).error('Connection lost. Exceeded maximum connection retries.')
@@ -39,6 +40,7 @@ async def read_msgs_from(messages_queue: Queue, status_updates_queue: Queue, cha
             retry_count += 1
             status_updates_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
             logger.bind(
+                module='server',
                 action='reading',
                 error=str(e)
             ).warning(f'Connection lost. Retrying ({retry_count}/{settings.MAX_CONNECTION_ATTEMPT_RETRY})....')
@@ -58,6 +60,7 @@ async def load_messages_history_to(messages_queue: Queue, chat_config: Namespace
     if not chat_history_path.exists():
         logger.bind(
             module='server',
+            action='load chat history',
             file_path=str(chat_history_path),
         ).error('Wrong chat history file path')
         return
@@ -90,6 +93,7 @@ async def send_msgs(
     except (socket.gaierror, TimeoutError) as e:
         if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
             logger.bind(
+                module='client',
                 action='sending',
                 error=str(e)
             ).error('Connection lost. Exceeded maximum connection retries.')
@@ -97,6 +101,7 @@ async def send_msgs(
         retry_count += 1
         status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
         logger.bind(
+            module='client',
             action='sending',
             error=str(e),
         ).warning(f'Connection lost. Retrying ({retry_count}/{settings.MAX_CONNECTION_ATTEMPT_RETRY})....')

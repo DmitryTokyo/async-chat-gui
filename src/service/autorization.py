@@ -10,6 +10,7 @@ async def authorize(reader, writer, user_hash, upd_user_file):
     user_hash_identification_response = await get_user_identification_response(reader, writer, user_hash)
     if not json.loads(user_hash_identification_response.decode()):
         logger.bind(
+            module='client',
             action='authorisation',
             user_hash=user_hash,
             user_hash_identification=str(user_hash_identification_response.decode()),
@@ -17,6 +18,7 @@ async def authorize(reader, writer, user_hash, upd_user_file):
         raise InvalidToken(user_hash)
 
     logger.bind(
+        module='client',
         action='authorisation',
         user_hash=user_hash,
         user_hash_identification=str(user_hash_identification_response.decode()),

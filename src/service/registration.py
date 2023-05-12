@@ -1,10 +1,8 @@
 import asyncio
 import json
-import logging
 
 from src.config.chat_config import save_user_info
-
-logger = logging.getLogger('server')
+from loguru import logger
 
 
 async def register(host, port):
@@ -28,7 +26,10 @@ async def register(host, port):
     writer.write('\n'.encode())
 
     response = await reader.readline()
-    logger.debug(response.decode())
+    logger.bind(
+        module='server',
+        action='registration',
+    ).debug(response.decode())
     user_info = json.loads(response.decode())
     save_user_info(response)
 
