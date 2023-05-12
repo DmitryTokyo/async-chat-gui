@@ -4,7 +4,7 @@ from tkinter.scrolledtext import ScrolledText
 from tkinter import messagebox
 
 from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged, NicknameReceived
-from src.utils.custom_error import InvalidToken, TkAppClosed
+from src.custom_error import InvalidToken, TkAppClosed
 
 
 def process_new_message(input_field, sending_queue):

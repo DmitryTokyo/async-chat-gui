@@ -11,7 +11,7 @@ from chat_connection import ChatConnection
 from loguru import logger
 
 from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged, NicknameReceived
-from src.utils.custom_error import InvalidToken
+from src.custom_error import InvalidToken
 from src.config import settings
 
 

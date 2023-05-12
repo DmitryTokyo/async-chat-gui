@@ -4,7 +4,7 @@ from argparse import Namespace
 from src.service import gui
 from src.config.chat_config import get_chat_config
 from src.chat_messages import read_msgs_from, load_messages_history_to, send_msgs
-from src.utils.custom_error import InvalidToken
+from src.custom_error import InvalidToken
 
 
 async def run_chat(chat_config: Namespace):

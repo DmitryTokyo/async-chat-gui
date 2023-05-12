@@ -1,7 +1,7 @@
 import json
 
 from src.config.chat_config import save_user_info
-from src.utils.custom_error import InvalidToken
+from src.custom_error import InvalidToken
 
 from loguru import logger
 
