@@ -1,26 +1,40 @@
 import asyncio
+import time
 from argparse import Namespace
 
 from src.service import gui
 from src.config.chat_config import get_chat_config
 from src.chat_messages import read_msgs_from, load_messages_history_to, send_msgs
 from src.custom_error import InvalidToken
-
+from loguru import logger
 
 async def run_chat(chat_config: Namespace):
     messages_queue = asyncio.Queue()
     sending_queue = asyncio.Queue()
     status_updates_queue = asyncio.Queue()
     exception_queue = asyncio.Queue()
-    await load_messages_history_to(messages_queue, chat_config),
+    watchdog_queue = asyncio.Queue()
+    await load_messages_history_to(messages_queue, watchdog_queue, chat_config),
     try:
         await asyncio.gather(
             gui.draw(messages_queue, sending_queue, status_updates_queue, exception_queue),
-            read_msgs_from(messages_queue, status_updates_queue, chat_config),
-            send_msgs(sending_queue, exception_queue, status_updates_queue, chat_config)
+            read_msgs_from(messages_queue, status_updates_queue, watchdog_queue, chat_config),
+            send_msgs(sending_queue, exception_queue, status_updates_queue, watchdog_queue, chat_config),
+            watch_for_connection(watchdog_queue)
         )
     except InvalidToken:
         cancel_all_tasks()
+
+
+async def watch_for_connection(watchdog_queue: asyncio.Queue) -> None:
+    while True:
+        msg = await watchdog_queue.get()
+        if msg:
+            timestamp = int(time.time())
+            logger.bind(
+                module='main',
+                action='watchdog_logger',
+            ).debug(f'[{timestamp}] Connection is alive. {msg.value}')
 
 
 def cancel_all_tasks():

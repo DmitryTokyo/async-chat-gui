@@ -10,12 +10,17 @@ from chat_connection import ChatConnection
 
 from loguru import logger
 
-from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged, NicknameReceived
+from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged, NicknameReceived, WatchDogMessage
 from src.custom_error import InvalidToken
 from src.config import settings
 
 
-async def read_msgs_from(messages_queue: Queue, status_updates_queue: Queue, chat_config: Namespace) -> None:
+async def read_msgs_from(
+    messages_queue: Queue,
+    status_updates_queue: Queue,
+    watchdog_queue: Queue,
+    chat_config: Namespace,
+) -> None:
     retry_count = 0
     while True:
         try:
@@ -29,6 +34,7 @@ async def read_msgs_from(messages_queue: Queue, status_updates_queue: Queue, cha
                     chat_config=chat_config,
                 )
                 status_updates_queue.put_nowait(ReadConnectionStateChanged.ESTABLISHED)
+                watchdog_queue.put_nowait(WatchDogMessage.NEW_CHAT_MESSAGE)
         except (socket.gaierror, TimeoutError) as e:
             if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
                 logger.bind(
@@ -52,7 +58,7 @@ async def save_messages(message_time: str, message: bytes, chat_config: Namespac
         await file.write(f'{message_time} {message.decode()}')
 
 
-async def load_messages_history_to(messages_queue: Queue, chat_config: Namespace) -> None:
+async def load_messages_history_to(messages_queue: Queue, watchdog_queue: Queue, chat_config: Namespace) -> None:
     if not chat_config.history_path:
         return
 
@@ -69,26 +75,32 @@ async def load_messages_history_to(messages_queue: Queue, chat_config: Namespace
         for message in chat_history:
             messages_queue.put_nowait(message)
 
+    watchdog_queue.put_nowait(WatchDogMessage.LOADED_CHAT_HISTORY)
+
 
 async def send_msgs(
     sending_queue: Queue,
     exception_queue: Queue,
     status_updates_queue: Queue,
+    watchdog_queue: Queue,
     chat_config: Namespace,
 ) -> None:
     retry_count = 0
+    watchdog_queue.put_nowait(WatchDogMessage.BEFORE_AUTH)
     try:
         async with ChatConnection(
             chat_config.host, chat_config.port_in, chat_config.user_hash, chat_config.save_info
         ) as (reader, writer):
             status_updates_queue.put_nowait(SendingConnectionStateChanged.ESTABLISHED)
             status_updates_queue.put_nowait(NicknameReceived(chat_config.nickname))
+            watchdog_queue.put_nowait(WatchDogMessage.AUTH_DONE)
             while True:
                 msg = await sending_queue.get()
                 if msg:
                     writer.write(msg.encode())
                     writer.write('\n\n'.encode())
                     await writer.drain()
+                    watchdog_queue.put_nowait(WatchDogMessage.SENT_MESSAGE)
 
     except (socket.gaierror, TimeoutError) as e:
         if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
