@@ -1,5 +1,4 @@
 import asyncio
-import time
 from argparse import Namespace
 
 from src.service import gui
