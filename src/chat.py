@@ -8,6 +8,9 @@ from src.chat_messages import read_msgs_from, load_messages_history_to, send_msg
 from src.custom_error import InvalidToken
 from loguru import logger
 
+from src.utils.watchdog_messages import generate_watchdog_logger_messages
+
+
 async def run_chat(chat_config: Namespace):
     messages_queue = asyncio.Queue()
     sending_queue = asyncio.Queue()
@@ -30,11 +33,11 @@ async def watch_for_connection(watchdog_queue: asyncio.Queue) -> None:
     while True:
         msg = await watchdog_queue.get()
         if msg:
-            timestamp = int(time.time())
+            logger_messages = generate_watchdog_logger_messages(watchdog_message=msg)
             logger.bind(
                 module='main',
                 action='watchdog_logger',
-            ).debug(f'[{timestamp}] Connection is alive. {msg.value}')
+            ).debug(logger_messages)
 
 
 def cancel_all_tasks():

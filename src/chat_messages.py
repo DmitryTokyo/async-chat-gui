@@ -6,6 +6,7 @@ from datetime import datetime
 import socket
 from pathlib import Path
 
+from async_timeout import timeout
 from chat_connection import ChatConnection
 
 from loguru import logger
@@ -25,7 +26,8 @@ async def read_msgs_from(
     while True:
         try:
             async with ChatConnection(chat_config.host, chat_config.port_out) as (reader, writer):
-                message = await reader.readline()
+                async with timeout(1) as cm:
+                    message = await reader.readline()
                 message_time = datetime.now().strftime('[%d.%m.%y %H:%M]')
                 messages_queue.put_nowait(f'{message_time} {message.decode()}')
                 await save_messages(
@@ -36,6 +38,8 @@ async def read_msgs_from(
                 status_updates_queue.put_nowait(ReadConnectionStateChanged.ESTABLISHED)
                 watchdog_queue.put_nowait(WatchDogMessage.NEW_CHAT_MESSAGE)
         except (socket.gaierror, TimeoutError) as e:
+            if cm.expired:
+                watchdog_queue.put_nowait(WatchDogMessage.TIMEOUT_ELAPSED)
             if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
                 logger.bind(
                     module='server',
@@ -50,7 +54,7 @@ async def read_msgs_from(
                 action='reading',
                 error=str(e)
             ).warning(f'Connection lost. Retrying ({retry_count}/{settings.MAX_CONNECTION_ATTEMPT_RETRY})....')
-            await asyncio.sleep(settings.CONNECTION_RETRY_TIMEOUT)
+            await asyncio.sleep(settings.CONNECTION_RETRY_TIMEOUT_SEC)
 
 
 async def save_messages(message_time: str, message: bytes, chat_config: Namespace) -> None:
@@ -117,7 +121,7 @@ async def send_msgs(
             action='sending',
             error=str(e),
         ).warning(f'Connection lost. Retrying ({retry_count}/{settings.MAX_CONNECTION_ATTEMPT_RETRY})....')
-        await asyncio.sleep(settings.CONNECTION_RETRY_TIMEOUT)
+        await asyncio.sleep(settings.CONNECTION_RETRY_TIMEOUT_SEC)
     except InvalidToken:
         print(f'User hash: {chat_config.user_hash} is unknown. Please check or get a new one.')
         exception_queue.put_nowait('Check your token. Server has not recognize it')
