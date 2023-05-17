@@ -24,3 +24,4 @@ class WatchDogMessage(Enum):
     NEW_CHAT_MESSAGE = 'New message in chat'
     SENT_MESSAGE = 'Message sent'
     LOADED_CHAT_HISTORY = 'Chat history loaded'
+    TIMEOUT_ELAPSED = 'timeout is elapsed'
