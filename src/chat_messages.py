@@ -37,6 +37,7 @@ async def read_msgs_from(
                 )
                 status_updates_queue.put_nowait(ReadConnectionStateChanged.ESTABLISHED)
                 watchdog_queue.put_nowait(WatchDogMessage.NEW_CHAT_MESSAGE)
+                retry_count = 0
         except (socket.gaierror, TimeoutError) as e:
             if cm.expired:
                 watchdog_queue.put_nowait(WatchDogMessage.TIMEOUT_ELAPSED)
@@ -47,6 +48,7 @@ async def read_msgs_from(
                     error=str(e),
                 ).error('Connection lost. Exceeded maximum connection retries.')
                 raise socket.gaierror
+
             retry_count += 1
             status_updates_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
             logger.bind(
@@ -91,37 +93,40 @@ async def send_msgs(
 ) -> None:
     retry_count = 0
     watchdog_queue.put_nowait(WatchDogMessage.BEFORE_AUTH)
-    try:
-        async with ChatConnection(
-            chat_config.host, chat_config.port_in, chat_config.user_hash, chat_config.save_info
-        ) as (reader, writer):
-            status_updates_queue.put_nowait(SendingConnectionStateChanged.ESTABLISHED)
-            status_updates_queue.put_nowait(NicknameReceived(chat_config.nickname))
-            watchdog_queue.put_nowait(WatchDogMessage.AUTH_DONE)
-            while True:
-                msg = await sending_queue.get()
-                if msg:
-                    writer.write(msg.encode())
-                    writer.write('\n\n'.encode())
-                    await writer.drain()
-                    watchdog_queue.put_nowait(WatchDogMessage.SENT_MESSAGE)
-
-    except (socket.gaierror, TimeoutError) as e:
-        if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
+    while True:
+        try:
+            async with ChatConnection(
+                chat_config.host, chat_config.port_in, chat_config.user_hash, chat_config.save_info
+            ) as (reader, writer):
+                status_updates_queue.put_nowait(SendingConnectionStateChanged.ESTABLISHED)
+                status_updates_queue.put_nowait(NicknameReceived(chat_config.nickname))
+                watchdog_queue.put_nowait(WatchDogMessage.AUTH_DONE)
+                while True:
+                    msg = await sending_queue.get()
+                    if msg:
+                        writer.write(msg.encode())
+                        writer.write('\n\n'.encode())
+                        await writer.drain()
+                        watchdog_queue.put_nowait(WatchDogMessage.SENT_MESSAGE)
+                    retry_count = 0
+        except (socket.gaierror, TimeoutError) as e:
+            if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
+                logger.bind(
+                    module='client',
+                    action='sending',
+                    error=str(e)
+                ).error('Connection lost in sending action. Exceeded maximum connection retries.')
+                raise socket.gaierror
+            retry_count += 1
+            status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
             logger.bind(
                 module='client',
                 action='sending',
-                error=str(e)
-            ).error('Connection lost. Exceeded maximum connection retries.')
-            raise socket.gaierror
-        retry_count += 1
-        status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
-        logger.bind(
-            module='client',
-            action='sending',
-            error=str(e),
-        ).warning(f'Connection lost. Retrying ({retry_count}/{settings.MAX_CONNECTION_ATTEMPT_RETRY})....')
-        await asyncio.sleep(settings.CONNECTION_RETRY_TIMEOUT_SEC)
-    except InvalidToken:
-        print(f'User hash: {chat_config.user_hash} is unknown. Please check or get a new one.')
-        exception_queue.put_nowait('Check your token. Server has not recognize it')
+                error=str(e),
+            ).warning(
+                f'Connection lost in sending action. Retrying ({retry_count}/{settings.MAX_CONNECTION_ATTEMPT_RETRY})....'
+            )
+            await asyncio.sleep(settings.CONNECTION_RETRY_TIMEOUT_SEC)
+        except InvalidToken:
+            print(f'User hash: {chat_config.user_hash} is unknown. Please check or get a new one.')
+            exception_queue.put_nowait('Check your token. Server has not recognize it')
