@@ -14,3 +14,7 @@ class InvalidToken(Exception):
 
 class TkAppClosed(Exception):
     pass
+
+
+class MaxRetriesExceededError(Exception):
+    pass
