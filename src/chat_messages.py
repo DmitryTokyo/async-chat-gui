@@ -14,6 +14,7 @@ from loguru import logger
 from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged, NicknameReceived, WatchDogMessage
 from src.custom_error import InvalidToken
 from src.config import settings
+from src.server_healthcheck import check_server_health
 
 
 async def read_msgs_from(
@@ -40,6 +41,9 @@ async def read_msgs_from(
                 retry_count = 0
         except (socket.gaierror, TimeoutError) as e:
             if cm.expired:
+                if await check_server_health(chat_config):
+                    watchdog_queue.put_nowait(WatchDogMessage.SERVER_HEALTHCHECK)
+                    continue
                 watchdog_queue.put_nowait(WatchDogMessage.TIMEOUT_ELAPSED)
             if retry_count >= settings.MAX_CONNECTION_ATTEMPT_RETRY:
                 logger.bind(
