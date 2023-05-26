@@ -6,7 +6,7 @@ from tenacity import retry, stop_after_attempt, retry_if_exception_type
 from src.service import gui
 from src.config.chat_config import get_chat_config
 from src.chat_messages import read_msgs_from, load_messages_history_to, send_msgs
-from src.custom_error import InvalidToken, MaxRetriesExceededError
+from src.custom_error import InvalidToken, MaxRetriesExceededError, TkAppClosed
 from loguru import logger
 
 from src.utils.watchdog_messages import generate_watchdog_logger_messages
@@ -61,7 +61,7 @@ async def main():
     if chat_config.host and chat_config.port_out and chat_config.port_in:
         try:
             await handle_connection(chat_config=chat_config)
-        except (MaxRetriesExceededError, InvalidToken):
+        except (MaxRetriesExceededError, InvalidToken, TkAppClosed):
             cancel_all_tasks()
 
 if __name__ in '__main__':

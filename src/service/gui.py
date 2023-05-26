@@ -7,6 +7,8 @@ from anyio import create_task_group
 from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged, NicknameReceived
 from src.custom_error import InvalidToken, TkAppClosed
 
+from loguru import logger
+
 
 def process_new_message(input_field, sending_queue):
     text = input_field.get()
@@ -19,7 +21,6 @@ async def update_tk(root_frame, interval=1 / 120):
         try:
             root_frame.update()
         except tk.TclError:
-            # if application has been destroyed/closed
             raise TkAppClosed()
         await asyncio.sleep(interval)
 
@@ -27,8 +28,11 @@ async def update_tk(root_frame, interval=1 / 120):
 async def update_conversation_history(panel, messages_queue):
     while True:
         msg = await messages_queue.get()
+        try:
+            panel['state'] = 'normal'
+        except tk.TclError:
+            raise TkAppClosed()
 
-        panel['state'] = 'normal'
         if panel.index('end-1c') != '1.0':
             panel.insert('end', '\n')
         panel.insert('end', msg)
@@ -110,8 +114,15 @@ async def draw(messages_queue, sending_queue, status_updates_queue, exception_qu
     conversation_panel = ScrolledText(root_frame, wrap='none')
     conversation_panel.pack(side="top", fill="both", expand=True)
 
-    async with create_task_group() as tg:
-        tg.start_soon(update_tk, root_frame)
-        tg.start_soon(update_conversation_history, conversation_panel, messages_queue)
-        tg.start_soon(update_status_panel, status_labels, status_updates_queue)
-        tg.start_soon(show_exception_window, exception_queue)
+    try:
+        async with create_task_group() as tg:
+            tg.start_soon(update_tk, root_frame)
+            tg.start_soon(update_conversation_history, conversation_panel, messages_queue)
+            tg.start_soon(update_status_panel, status_labels, status_updates_queue)
+            tg.start_soon(show_exception_window, exception_queue)
+    except TkAppClosed:
+        logger.bind(
+            module='gui',
+            action='drawing_frame',
+        ).error('Chat application was closed')
+        raise TkAppClosed
