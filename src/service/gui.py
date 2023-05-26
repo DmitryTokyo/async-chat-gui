@@ -2,6 +2,7 @@ import tkinter as tk
 import asyncio
 from tkinter.scrolledtext import ScrolledText
 from tkinter import messagebox
+from anyio import create_task_group
 
 from src.data_types import ReadConnectionStateChanged, SendingConnectionStateChanged, NicknameReceived
 from src.custom_error import InvalidToken, TkAppClosed
@@ -109,9 +110,8 @@ async def draw(messages_queue, sending_queue, status_updates_queue, exception_qu
     conversation_panel = ScrolledText(root_frame, wrap='none')
     conversation_panel.pack(side="top", fill="both", expand=True)
 
-    await asyncio.gather(
-        update_tk(root_frame),
-        update_conversation_history(conversation_panel, messages_queue),
-        update_status_panel(status_labels, status_updates_queue),
-        show_exception_window(exception_queue)
-    )
+    async with create_task_group() as tg:
+        tg.start_soon(update_tk, root_frame)
+        tg.start_soon(update_conversation_history, conversation_panel, messages_queue)
+        tg.start_soon(update_status_panel, status_labels, status_updates_queue)
+        tg.start_soon(show_exception_window, exception_queue)
